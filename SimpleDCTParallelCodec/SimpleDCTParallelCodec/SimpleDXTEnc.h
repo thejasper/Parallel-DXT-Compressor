@@ -27,12 +27,35 @@
  **/
 
 #pragma once
+
+#define INSET_SHIFT 4
+#define MSB5_MASK 0xF8 // the 5 most significant bits are 1
+#define MSB6_MASK 0xFC // the 6 most significant bits are 1
+
 class SimpleDXTEnc
 {
-public:
-	SimpleDXTEnc(void);
-	~SimpleDXTEnc(void);
+private:
+	static const int blockSize = 4;
 
-	bool compress(unsigned char* pDXTCompressed, unsigned char* pDecompressedBGRA, int width, int height, int& compressedSize);
+	unsigned char* pDecompressedBGRA, *pCompressedResult;
+	int width, height;
+
+	unsigned int getColorDistance(const unsigned char* first, const unsigned char* second);
+	void transformBlock(const unsigned char* first, unsigned char* result);
+
+	void calculateEndPoints(const unsigned char* block, unsigned char* minColor, unsigned char* maxColor);
+	unsigned int calculateIndices(const unsigned char* block, const unsigned char* minColor, const unsigned char* maxColor);
+
+	unsigned short encodeOneColor(const unsigned char* color);
+	unsigned int encodeColors(const unsigned char* minColor, const unsigned char* maxColor);
+
+	void storeBits(unsigned int bits);
+	void writeDDSHeader();
+
+public:
+	SimpleDXTEnc(unsigned char* img, int w, int h);
+	~SimpleDXTEnc();
+
+	bool compress(unsigned char* pDXTCompressed, int& compressedSize);
 };
 

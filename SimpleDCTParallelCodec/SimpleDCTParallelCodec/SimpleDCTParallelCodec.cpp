@@ -41,7 +41,7 @@
 int main(int argc, char* argv[])
 {
 	// Our input parameters
-	std::string inputFilename = "C:\\Users\\Jasper\\Dropbox\\School\\Masterjaar\\Eerste semester\\GPU programmering\\Project\\alchemist_goblin_head_color.tga";
+	std::string inputFilename = "input.tga";
 	
 	unsigned char* pOriginal;
 	int width;
@@ -82,14 +82,14 @@ int main(int argc, char* argv[])
 	outputImage.Write(width, height, pDecompressedBGRA, "Decompressed.tga");	
 
 	std::cout << "Compressing with DXT..." << std::endl;
-	SimpleDXTEnc dxtEncoder;
+	SimpleDXTEnc dxtEncoder(pDecompressedBGRA, width, height);
 	unsigned char* pDXTCompressed = new unsigned char[pictureSize*2];
-	if (!dxtEncoder.compress(pDXTCompressed, pDecompressedBGRA, width, height, compressedSize))
+	if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
 	{
 		fprintf(stderr, "Error compressing buffer with dxt\n");
 		return -1;
 	}
-	FileSystem::WriteMemoryToFile("DXTCompressed.dxt", pDXTCompressed, compressedSize);
+	FileSystem::WriteMemoryToFile("DXTCompressed.dds", pDXTCompressed, compressedSize);
 	
 	std::cout << "Exiting..." << std::endl;
 	
@@ -99,6 +99,5 @@ int main(int argc, char* argv[])
 	delete pDXTCompressed;
 
 	return 0;
-	
 }
 
