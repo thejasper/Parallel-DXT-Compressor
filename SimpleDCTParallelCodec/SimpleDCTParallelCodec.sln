@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 11
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleDCTParallelCodec", "SimpleDCTParallelCodec\SimpleDCTParallelCodec.vcxproj", "{98669EFC-DE90-B01D-536B-017CA5BF740C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Debug|Win32.Build.0 = Debug|Win32
+		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Release|Win32.ActiveCfg = Release|Win32
+		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
