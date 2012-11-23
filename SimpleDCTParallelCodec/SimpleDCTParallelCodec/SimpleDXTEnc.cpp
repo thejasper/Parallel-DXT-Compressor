@@ -135,14 +135,19 @@ unsigned int SimpleDXTEnc::calculateIndices(const unsigned char* block, const un
 
 unsigned short SimpleDXTEnc::encodeOneColor(const unsigned char* color)
 {
-	// encode one color in 5:6:5 format
-	return ((color[0] >> 3) << 11) | ((color[1] >> 2) << 5) | (color[2] >> 3);
+	// encode one color in 5:6:5 format and make sure it's rgb, not bgr
+	return ((color[2] >> 3) << 11) | ((color[1] >> 2) << 5) | (color[0] >> 3);
 }
  
 unsigned int SimpleDXTEnc::encodeColors(const unsigned char* minColor, const unsigned char* maxColor)
 {
 	unsigned int minBits = encodeOneColor(minColor);
 	unsigned int maxBits = encodeOneColor(maxColor);
+
+	// maxbits has to be greater, otherwise a 1-bit alpha channel is used (see specifications)
+	if (minBits > maxBits)
+		swap(minBits, maxBits);
+
 	return minBits << 16 | maxBits;
 }
 
@@ -187,7 +192,7 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 		for (int c = 0; c < width / blockSize; ++c)
 		{
 			// save block in a linear array
-			transformBlock(pImg + c*blockSize, block);
+			transformBlock(pImg + c*4*blockSize, block);
 
 			calculateEndPoints(block, minColor, maxColor);
 
