@@ -37,17 +37,17 @@ class SimpleDXTEnc
 private:
 	static const int blockSize = 4;
 
+	const int width, height;
 	unsigned char* pDecompressedBGRA, *pCompressedResult;
-	int width, height;
 
-	unsigned int getColorDistance(const unsigned char* first, const unsigned char* second);
-	void transformBlock(const unsigned char* first, unsigned char* result);
+	unsigned int getColorDistance(const unsigned char* first, const unsigned char* second) const;
+	void transformBlock(const unsigned char* first, unsigned char* result) const;
 
-	void calculateEndPoints(const unsigned char* block, unsigned char* minColor, unsigned char* maxColor);
-	unsigned int calculateIndices(const unsigned char* block, const unsigned char* minColor, const unsigned char* maxColor);
+	void calculateEndPoints(const unsigned char* block, unsigned char* minColor, unsigned char* maxColor) const;
+	unsigned int calculateIndices(const unsigned char* block, const unsigned char* minColor, const unsigned char* maxColor) const;
 
-	unsigned short encodeOneColor(const unsigned char* color);
-	unsigned int encodeColors(const unsigned char* minColor, const unsigned char* maxColor);
+	unsigned short encodeOneColor(const unsigned char* color) const;
+	unsigned int encodeColors(const unsigned char* minColor, const unsigned char* maxColor) const;
 
 	void storeBits(unsigned int bits);
 	void writeDDSHeader();
@@ -58,4 +58,3 @@ public:
 
 	bool compress(unsigned char* pDXTCompressed, int& compressedSize);
 };
-

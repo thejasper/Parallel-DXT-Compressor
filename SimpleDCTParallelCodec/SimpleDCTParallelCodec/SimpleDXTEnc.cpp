@@ -44,13 +44,15 @@ SimpleDXTEnc::~SimpleDXTEnc()
 {
 }
 
-unsigned int SimpleDXTEnc::getColorDistance(const unsigned char* first, const unsigned char* second)
+unsigned int SimpleDXTEnc::getColorDistance(const unsigned char* first, const unsigned char* second) const
 {
+	// calculate euclidian distance between colors
 	return pow(first[0]-second[0], 2) + pow(first[1]-second[1], 2) + pow(first[2]-second[2], 2);
 }
 
-void SimpleDXTEnc::transformBlock(const unsigned char* first, unsigned char* result)
+void SimpleDXTEnc::transformBlock(const unsigned char* first, unsigned char* result) const
 {
+	// transform the block in a lineair array for easy access
 	const int blockRowSize = 4 * blockSize;
 	for (int i = 0; i < 4; ++i)
 	{
@@ -59,7 +61,7 @@ void SimpleDXTEnc::transformBlock(const unsigned char* first, unsigned char* res
 	}
 }
 
-void SimpleDXTEnc::calculateEndPoints(const unsigned char* block, unsigned char* minColor, unsigned char* maxColor)
+void SimpleDXTEnc::calculateEndPoints(const unsigned char* block, unsigned char* minColor, unsigned char* maxColor) const
 {
 	fill(minColor, minColor + 3, 255);
 	fill(maxColor, maxColor + 3, 0);
@@ -91,7 +93,7 @@ void SimpleDXTEnc::calculateEndPoints(const unsigned char* block, unsigned char*
 	maxColor[2] = (maxColor[2] >= inset[2]) ? maxColor[2] - inset[2] : 0;
 }
 
-unsigned int SimpleDXTEnc::calculateIndices(const unsigned char* block, const unsigned char* minColor, const unsigned char* maxColor)
+unsigned int SimpleDXTEnc::calculateIndices(const unsigned char* block, const unsigned char* minColor, const unsigned char* maxColor) const
 {
 	unsigned char colors[4][4];
 	unsigned char indices[16];
@@ -110,6 +112,7 @@ unsigned int SimpleDXTEnc::calculateIndices(const unsigned char* block, const un
 	colors[3][1] = (1 * maxColor[1] + 2 * minColor[1]) / 3;
 	colors[3][2] = (1 * maxColor[2] + 2 * minColor[2]) / 3;
 
+	// for each block: save the index to the color that is the best match
 	for (int i = 0; i < 16; ++i)
 	{
 		unsigned int minDist = UINT_MAX;
@@ -126,20 +129,20 @@ unsigned int SimpleDXTEnc::calculateIndices(const unsigned char* block, const un
 		}
 	}
 
+	// pack in a 32-bit integer
 	unsigned int result = 0;
 	for (int i = 0; i < 16; ++i)
 		result |= (indices[i] << (i * 2));
-	
 	return result;
 }
 
-unsigned short SimpleDXTEnc::encodeOneColor(const unsigned char* color)
+unsigned short SimpleDXTEnc::encodeOneColor(const unsigned char* color) const
 {
 	// encode one color in 5:6:5 format and make sure it's rgb, not bgr
 	return ((color[2] >> 3) << 11) | ((color[1] >> 2) << 5) | (color[0] >> 3);
 }
  
-unsigned int SimpleDXTEnc::encodeColors(const unsigned char* minColor, const unsigned char* maxColor)
+unsigned int SimpleDXTEnc::encodeColors(const unsigned char* minColor, const unsigned char* maxColor) const
 {
 	unsigned int minBits = encodeOneColor(minColor);
 	unsigned int maxBits = encodeOneColor(maxColor);
@@ -160,6 +163,7 @@ void SimpleDXTEnc::storeBits(unsigned int bits)
 	pCompressedResult += 4;
 }
 
+// DDS specifications: http://msdn.microsoft.com/en-us/library/windows/desktop/bb943991(v=vs.85).aspx
 void SimpleDXTEnc::writeDDSHeader()
 {
 	unsigned int code[] = {'D', 'X', 'T', '1'};
@@ -200,11 +204,12 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 	unsigned char minColor[4];
 	unsigned char maxColor[4];
 
-	// iterate blocks
 	unsigned char* pImg = pDecompressedBGRA;
 	pCompressedResult = pDXTCompressed;
 	
 	writeDDSHeader();
+
+	// iterate blocks
 	for (int r = 0; r < height / blockSize; ++r)
 	{
 		for (int c = 0; c < width / blockSize; ++c)
@@ -214,6 +219,7 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 
 			calculateEndPoints(block, minColor, maxColor);
 
+			// store the compressed bytes (8 per block)
 			storeBits(encodeColors(minColor, maxColor)); // store reference colors
 			storeBits(calculateIndices(block, minColor, maxColor)); // store indices
 		}
