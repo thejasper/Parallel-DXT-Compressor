@@ -42,6 +42,8 @@ int main(int argc, char* argv[])
 {
 	// Our input parameters
 	std::string inputFilename = "input.tga";
+
+	inputFilename = argv[1];
 	
 	unsigned char* pOriginal;
 	int width;
