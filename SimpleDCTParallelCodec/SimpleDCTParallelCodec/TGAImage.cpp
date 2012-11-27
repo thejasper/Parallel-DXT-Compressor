@@ -84,7 +84,7 @@ bool TGAImage::Read(std::string filename, int& width, int& height, unsigned char
 
 	// Read information from the tga header
 	
-	if (buffer[2] != 2 || buffer[16] != 24)
+	if (buffer[2] != 2 || buffer[16] != 32)
 	{
 		// We need raw format and 24-bit pixels
 		return false;
@@ -98,7 +98,7 @@ bool TGAImage::Read(std::string filename, int& width, int& height, unsigned char
 	unsigned char* payload = new unsigned char[width * height * 4];
 
 	// swap rgb to bgr
-	for ( size_t i=imgStart, j=0 ; i<bufferSize ; i+=3, j+=4) 
+	for ( size_t i=imgStart, j=0 ; i<bufferSize ; i+=4, j+=4) 
 	{
 		payload[j+0] = buffer[i+2]; 	// blue
 		payload[j+1] = buffer[i+1];		// green

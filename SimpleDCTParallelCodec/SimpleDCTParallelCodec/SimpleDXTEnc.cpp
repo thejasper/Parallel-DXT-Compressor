@@ -26,39 +26,36 @@
  *
  **/
 
+#include "stdafx.h"
+
 #include <algorithm>
 #include <cmath>
 
-#include "stdafx.h"
 #include "SimpleDXTEnc.h"
 
 using namespace std;
+using namespace concurrency;
 
 SimpleDXTEnc::SimpleDXTEnc(unsigned char* img, int w, int h) : 
-	pDecompressedBGRA(img), width(w), height(h)
+	width(w), height(h)
 {
+	pDecompressedBGRA = new unsigned int[width * height];
+
+	// transform each pixel consisting of 4 unsigned chars to one unsigned integer
+	for (int i = 0; i < w * h; ++i, img += 4)
+		pDecompressedBGRA[i] = img[0] << 24 | img[1] << 16 | img[2] << 8 | img[3];
 }
 
 
 SimpleDXTEnc::~SimpleDXTEnc()
 {
+	delete[] pDecompressedBGRA;
 }
 
 unsigned int SimpleDXTEnc::getColorDistance(const unsigned char* first, const unsigned char* second) const
 {
 	// calculate euclidian distance between colors
 	return pow(first[0]-second[0], 2) + pow(first[1]-second[1], 2) + pow(first[2]-second[2], 2);
-}
-
-void SimpleDXTEnc::transformBlock(const unsigned char* first, unsigned char* result) const
-{
-	// transform the block in a lineair array for easy access
-	const int blockRowSize = 4 * blockSize;
-	for (int i = 0; i < 4; ++i)
-	{
-		copy(first, first + blockRowSize, result + i*blockRowSize);
-		first += width*4;
-	}
 }
 
 void SimpleDXTEnc::calculateEndPoints(const unsigned char* block, unsigned char* minColor, unsigned char* maxColor) const
@@ -200,34 +197,35 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 	if (width % 4 || height % 4)
 		return false;
 
-	unsigned char block[4*blockSize*blockSize];
-	unsigned char minColor[4];
-	unsigned char maxColor[4];
+	compressedSize = (width * height) / 4;
+	unsigned int* result = new unsigned int[compressedSize];
 
-	unsigned char* pImg = pDecompressedBGRA;
-	pCompressedResult = pDXTCompressed;
-	
-	writeDDSHeader();
+	array_view<const unsigned int, 2> uncompressedBGRA(height, width, pDecompressedBGRA); // input
+	array_view<unsigned int, 1> compressedDXT(compressedSize, result); // output
 
-	// iterate blocks
-	for (int r = 0; r < height / blockSize; ++r)
-	{
-		for (int c = 0; c < width / blockSize; ++c)
+	parallel_for_each(
+		uncompressedBGRA.extent.tile<4, 4>(), 
+		[=](tiled_index<4, 4> idx) restrict(amp)
 		{
-			// save block in a linear array
-			transformBlock(pImg + c*4*blockSize, block);
+			// pixels in the block, row by row
+			tile_static unsigned int block[4*4];
 
-			calculateEndPoints(block, minColor, maxColor);
+			// fill the tile and wait till it's completed
+			block[idx.local[0]*4 + idx.local[1]] = uncompressedBGRA[idx.global];
+			idx.barrier.wait();
 
-			// store the compressed bytes (8 per block)
-			storeBits(encodeColors(minColor, maxColor)); // store reference colors
-			storeBits(calculateIndices(block, minColor, maxColor)); // store indices
+			// execute remainer only once
+			if (idx.local[0] != 0 || idx.local[1] != 0)
+				return;
+
+			// calculate end points
+
+			// calculate optimal indices to one of endpoints or interpolated values
+
+			// store the result (8 bytes)
+
 		}
+	);
 
-		// advance 4 lines
-		pImg += width * 4 * 4;
-	}
-
-	compressedSize = pCompressedResult - pDXTCompressed;
 	return true;
 }

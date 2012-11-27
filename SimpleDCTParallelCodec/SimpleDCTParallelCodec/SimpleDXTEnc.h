@@ -40,7 +40,7 @@ private:
 	static const int blockSize = 4;
 
 	const int width, height;
-	unsigned char* pDecompressedBGRA, *pCompressedResult;
+	unsigned int* pDecompressedBGRA, *pCompressedResult;
 
 	unsigned int getColorDistance(const unsigned char* first, const unsigned char* second) const;
 	void transformBlock(const unsigned char* first, unsigned char* result) const;
