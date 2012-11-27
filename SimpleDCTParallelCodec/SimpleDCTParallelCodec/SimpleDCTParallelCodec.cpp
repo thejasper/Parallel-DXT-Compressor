@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 {
 	// Our input parameters
 	std::string inputFilename = "alchemist_goblin_head_color.tga";
-	
+
 	unsigned char* pOriginal;
 	int width;
 	int height;
