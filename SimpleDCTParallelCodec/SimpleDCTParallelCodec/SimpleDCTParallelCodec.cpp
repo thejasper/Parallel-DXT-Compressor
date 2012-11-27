@@ -36,6 +36,7 @@
 #include "SimpleDXTEnc.h"
 #include "FileSystem.h"
 #include "TGAImage.h"
+#include <Windows.h>
 
 
 int main(int argc, char* argv[])
@@ -45,6 +46,9 @@ int main(int argc, char* argv[])
 	std::string outputFilename = "DXTCompressed.dds";
 	bool verbose = false;
 	int loops = 1;
+
+	// Our timer parameters
+	LARGE_INTEGER startTime, endTime, freq;
 
 	for (int i=1; i<argc; ++i) {
 		if (argv[i] == "-i") {
@@ -94,6 +98,7 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Error decompressing buffer\n");
 		return -1;
 	}
+
 	// pCompressed now contains our compressed file	
 	// Write output to disk
 	TGAImage outputImage;
@@ -102,14 +107,24 @@ int main(int argc, char* argv[])
 	if(verbose) std::cout << "Compressing with DXT..." << std::endl;
 	SimpleDXTEnc dxtEncoder(pDecompressedBGRA, width, height);
 	unsigned char* pDXTCompressed = new unsigned char[pictureSize*2];
-	if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
-	{
-		fprintf(stderr, "Error compressing buffer with dxt\n");
-		return -1;
-	}
-	FileSystem::WriteMemoryToFile(outputFilename, pDXTCompressed, compressedSize);
 	
-	std::cout << "average time" << ", " << "psnr quality" << ", ";
+	QueryPerformanceCounter(&startTime);  //Start of the timer
+	for (int i=0; i<loops; i++) {
+		if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
+		{
+			fprintf(stderr, "Error compressing buffer with dxt\n");
+			return -1;
+		}
+	}
+	QueryPerformanceCounter(&endTime); //End of the timer
+	QueryPerformanceFrequency(&freq); //Get the frequency
+	//TODO Synchronise with GPU!
+
+	FileSystem::WriteMemoryToFile(outputFilename, pDXTCompressed, compressedSize);
+
+	float averageTime = (float)(endTime.LowPart - startTime.LowPart)*1000/(freq.LowPart * loops); //Calculate the average time
+	
+	std::cout << averageTime << ", " << "psnr quality" << ", ";
 	std::cout << "Desmadril" << ", Cockaerts" << std::endl;
 
 	if(verbose) std::cout << "Exiting..." << std::endl;
