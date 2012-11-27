@@ -106,8 +106,11 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Error compressing buffer with dxt\n");
 		return -1;
 	}
-	FileSystem::WriteMemoryToFile("DXTCompressed.dds", pDXTCompressed, compressedSize);
+	FileSystem::WriteMemoryToFile(outputFilename, pDXTCompressed, compressedSize);
 	
+	std::cout << "average time" << ", " << "psnr quality" << ", ";
+	std::cout << "Desmadril" << ", Cockaerts" << std::endl;
+
 	std::cout << "Exiting..." << std::endl;
 	
 	delete pOriginal;
