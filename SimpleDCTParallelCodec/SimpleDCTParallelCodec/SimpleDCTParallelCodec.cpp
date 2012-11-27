@@ -43,6 +43,7 @@ int main(int argc, char* argv[])
 	// Our input parameters
 	std::string inputFilename = "input.tga";
 	std::string outputFilename = "DXTCompressed.dds";
+	bool verbose = false;
 	int loops = 1;
 
 	for (int i=1; i<argc; ++i) {
@@ -51,7 +52,7 @@ int main(int argc, char* argv[])
 		} else if (argv[i] == "-o") {
 			outputFilename = argv[i++];
 		} else if (argv[i] == "-verbose") {
-			//TODO, what does verbose do exactly?
+			verbose = true;
 		} else if (argv[i] == "-l") {
 			loops = atoi(argv[i++]);
 		}
@@ -64,14 +65,14 @@ int main(int argc, char* argv[])
 	int width;
 	int height;
 	
-	std::cout << "Reading TGA..." << std::endl;
+	if(verbose) std::cout << "Reading TGA..." << std::endl;
 	TGAImage inputImage; 
 	inputImage.Read(inputFilename, width, height, &pOriginal); // TGA contains 24-bit pixels (BGR)
 	size_t pictureSize = width*height*4;	// We use 32-bit pixels (RGBA)
 	// pOriginal now contains the entire input file
 
 	
-	std::cout << "Compressing TGA with JPEG YCoCg..." << std::endl;
+	if(verbose) std::cout << "Compressing TGA with JPEG YCoCg..." << std::endl;
 	// We allocate memory to store the compresses file (presume double the amount of bits will suffice)
 	unsigned char* pCompressed = new unsigned char[pictureSize*2];
 	int compressedSize = 0;
@@ -85,7 +86,7 @@ int main(int argc, char* argv[])
 	FileSystem::WriteMemoryToFile("Compressed.out", pCompressed, compressedSize);
 	
 	
-	std::cout << "Decompressing JPEG YCoCg..." << std::endl;
+	if(verbose) std::cout << "Decompressing JPEG YCoCg..." << std::endl;
 	unsigned char* pDecompressedBGRA = new unsigned char[pictureSize];
 	SimpleDCTDec decoder;
 	if (!decoder.decompress(pDecompressedBGRA, pCompressed, width, height, compressedSize))
@@ -98,7 +99,7 @@ int main(int argc, char* argv[])
 	TGAImage outputImage;
 	outputImage.Write(width, height, pDecompressedBGRA, "Decompressed.tga");	
 
-	std::cout << "Compressing with DXT..." << std::endl;
+	if(verbose) std::cout << "Compressing with DXT..." << std::endl;
 	SimpleDXTEnc dxtEncoder(pDecompressedBGRA, width, height);
 	unsigned char* pDXTCompressed = new unsigned char[pictureSize*2];
 	if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
@@ -111,7 +112,7 @@ int main(int argc, char* argv[])
 	std::cout << "average time" << ", " << "psnr quality" << ", ";
 	std::cout << "Desmadril" << ", Cockaerts" << std::endl;
 
-	std::cout << "Exiting..." << std::endl;
+	if(verbose) std::cout << "Exiting..." << std::endl;
 	
 	delete pOriginal;
 	delete pCompressed;
