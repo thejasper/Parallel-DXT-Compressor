@@ -42,8 +42,23 @@ int main(int argc, char* argv[])
 {
 	// Our input parameters
 	std::string inputFilename = "input.tga";
+	std::string outputFilename = "DXTCompressed.dds";
+	int loops = 1;
 
-	inputFilename = argv[1];
+	for (int i=1; i<argc; ++i) {
+		if (argv[i] == "-i") {
+			inputFilename = argv[i++];
+		} else if (argv[i] == "-o") {
+			outputFilename = argv[i++];
+		} else if (argv[i] == "-verbose") {
+			//TODO, what does verbose do exactly?
+		} else if (argv[i] == "-l") {
+			loops = atoi(argv[i++]);
+		}
+	}
+
+	//http://msdn.microsoft.com/en-us/library/hh873132.aspx
+	//std::vector<accelerator> accs = accelerator::get_all();
 	
 	unsigned char* pOriginal;
 	int width;
