@@ -37,7 +37,7 @@
 #include "FileSystem.h"
 #include "TGAImage.h"
 #include <Windows.h>
-
+#include "PSNRTools.h"
 
 int main(int argc, char* argv[])
 {
@@ -51,14 +51,21 @@ int main(int argc, char* argv[])
 	LARGE_INTEGER startTime, endTime, freq;
 
 	for (int i=1; i<argc; ++i) {
-		if (argv[i] == "-i") {
-			inputFilename = argv[i++];
-		} else if (argv[i] == "-o") {
-			outputFilename = argv[i++];
-		} else if (argv[i] == "-verbose") {
+		if (strcmp(argv[i],  "-i") == 0) {
+			i++;
+			inputFilename = argv[i];
+		} else if (strcmp(argv[i], "-o") == 0) {
+			i++;
+			outputFilename = argv[i];
+		} else if (strcmp(argv[i], "-verbose") == 0) {
 			verbose = true;
-		} else if (argv[i] == "-l") {
-			loops = atoi(argv[i++]);
+		} else if (strcmp(argv[i], "-l") == 0) {
+			i++;
+			loops = atoi(argv[i]);
+			if(loops == 0) {
+				fprintf(stderr, "Error reading loop count, set to 1\n");
+				loops = 1;
+			}
 		}
 	}
 
@@ -107,26 +114,33 @@ int main(int argc, char* argv[])
 	if(verbose) std::cout << "Compressing with DXT..." << std::endl;
 	SimpleDXTEnc dxtEncoder(pDecompressedBGRA, width, height);
 	unsigned char* pDXTCompressed = new unsigned char[pictureSize*2];
-	
 	QueryPerformanceCounter(&startTime);  //Start of the timer
-	for (int i=0; i<loops; i++) {
+	for (int i=1; i<=loops; i++) {
+		if(verbose) std::cout << "-" << i;
 		if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
 		{
 			fprintf(stderr, "Error compressing buffer with dxt\n");
 			return -1;
 		}
 	}
+	if(verbose)  std::cout << std::endl;
 	QueryPerformanceCounter(&endTime); //End of the timer
 	QueryPerformanceFrequency(&freq); //Get the frequency
 	//TODO Synchronise with GPU!
+
+	//Calculate PSNR Value
+	PSNRTools::PSNR_INFO psnrResult;
+	PSNRTools::CalculatePSNRFromRGBA(psnrResult, pDXTCompressed, pDecompressedBGRA, width, height);
+	double averagePSNR = (psnrResult.u.psnr + psnrResult.v.psnr + psnrResult.y.psnr) / 3;
 
 	FileSystem::WriteMemoryToFile(outputFilename, pDXTCompressed, compressedSize);
 
 	float averageTime = (float)(endTime.LowPart - startTime.LowPart)*1000/(freq.LowPart * loops); //Calculate the average time
 	
-	std::cout << averageTime << ", " << "psnr quality" << ", ";
-	std::cout << "Desmadril" << ", Cockaerts" << std::endl;
+	std::cout << averageTime << ", " << averagePSNR << ", ";
+	std::cout << "Desmadryl" << ", Cockaerts" << std::endl;
 
+	if(verbose)system("pause");
 	if(verbose) std::cout << "Exiting..." << std::endl;
 	
 	delete pOriginal;
