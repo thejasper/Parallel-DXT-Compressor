@@ -31,17 +31,30 @@
 
 #include "stdafx.h"
 
+#include <vector>
+
+#include "amp.h"
+
 #include "SimpleDCTDec.h"
 #include "SimpleDCTEnc.h"
 #include "SimpleDXTEnc.h"
 #include "FileSystem.h"
 #include "TGAImage.h"
 
+using namespace concurrency;
 
 int main(int argc, char* argv[])
 {
+	std::vector<accelerator> accs = accelerator::get_all();
+    for (int i = 0; i < accs.size(); i++) {
+        std::wcout << accs[i].device_path << "\n";
+        std::wcout << accs[i].dedicated_memory << "\n";
+        std::wcout << (accs[i].supports_double_precision ? 
+            "double precision: true" : "double precision: false") << "\n";    
+    }
+
 	// Our input parameters
-	std::string inputFilename = "alchemist_goblin_head_color.tga";
+	std::string inputFilename = "small.tga";
 
 	unsigned char* pOriginal;
 	int width;

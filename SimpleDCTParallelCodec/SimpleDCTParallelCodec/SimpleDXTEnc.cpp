@@ -30,38 +30,29 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 #include "SimpleDXTEnc.h"
 
 using namespace std;
 using namespace concurrency;
 
-SimpleDXTEnc::SimpleDXTEnc(unsigned char* img, int w, int h) : 
-	width(w), height(h)
-{
-	pDecompressedBGRA = new unsigned int[width * height];
-
-	// transform each pixel consisting of 4 unsigned chars to one unsigned integer
-	for (int i = 0; i < w * h; ++i, img += 4)
-		pDecompressedBGRA[i] = img[0] << 24 | img[1] << 16 | img[2] << 8 | img[3];
-}
-
-
-SimpleDXTEnc::~SimpleDXTEnc()
-{
-	delete[] pDecompressedBGRA;
-}
-
-unsigned int SimpleDXTEnc::getColorDistance(const unsigned char* first, const unsigned char* second) const
+unsigned int DXT1BlockEncode::getColorDistance(const unsigned int* first, const unsigned int* second) restrict(amp)
 {
 	// calculate euclidian distance between colors
-	return pow(first[0]-second[0], 2) + pow(first[1]-second[1], 2) + pow(first[2]-second[2], 2);
+	const unsigned int diffB = first[0] - second[0];
+	const unsigned int diffG = first[1] - second[1];
+	const unsigned int diffR = first[2] - second[2];
+	return diffB * diffB + diffG * diffG + diffR * diffR;
 }
 
-void SimpleDXTEnc::calculateEndPoints(const unsigned char* block, unsigned char* minColor, unsigned char* maxColor) const
+unsigned int DXT1BlockEncode::calculateEndPoints(const unsigned int* block, unsigned int* minColor, unsigned int* maxColor) restrict(amp)
 {
-	fill(minColor, minColor + 3, 255);
-	fill(maxColor, maxColor + 3, 0);
+	for (int i = 0; i < 3; ++i)
+	{
+		minColor[i] = 255;
+		maxColor[i] = 0;
+	}
 
 	// iterate colors in block
 	for (int i = 0; i < 16; ++i)
@@ -78,7 +69,7 @@ void SimpleDXTEnc::calculateEndPoints(const unsigned char* block, unsigned char*
 	}
 
 	// make RGB bounding box 1/16th of it's size smaller in every direction
-	unsigned char inset[3];
+	unsigned int inset[3];
 	inset[0] = ( maxColor[0] - minColor[0] ) >> INSET_SHIFT;
 	inset[1] = ( maxColor[1] - minColor[1] ) >> INSET_SHIFT;
 	inset[2] = ( maxColor[2] - minColor[2] ) >> INSET_SHIFT;
@@ -88,12 +79,14 @@ void SimpleDXTEnc::calculateEndPoints(const unsigned char* block, unsigned char*
 	maxColor[0] = (maxColor[0] >= inset[0]) ? maxColor[0] - inset[0] : 0;
 	maxColor[1] = (maxColor[1] >= inset[1]) ? maxColor[1] - inset[1] : 0;
 	maxColor[2] = (maxColor[2] >= inset[2]) ? maxColor[2] - inset[2] : 0;
+
+	return DXT1BlockEncode::encodeColors(minColor, maxColor);
 }
 
-unsigned int SimpleDXTEnc::calculateIndices(const unsigned char* block, const unsigned char* minColor, const unsigned char* maxColor) const
+unsigned int DXT1BlockEncode::calculateIndices(const unsigned int* block, const unsigned int* minColor, const unsigned int* maxColor) restrict(amp)
 {
-	unsigned char colors[4][4];
-	unsigned char indices[16];
+	unsigned int colors[4][4];
+	unsigned int indices[16];
 
 	// save maximum, minimum and 2 interpolated colors for easy access
 	colors[0][0] = (maxColor[0] & MSB5_MASK) | (maxColor[0] >> 5);
@@ -133,22 +126,42 @@ unsigned int SimpleDXTEnc::calculateIndices(const unsigned char* block, const un
 	return result;
 }
 
-unsigned short SimpleDXTEnc::encodeOneColor(const unsigned char* color) const
+unsigned int DXT1BlockEncode::encodeOneColor(const unsigned int* color) restrict(amp)
 {
 	// encode one color in 5:6:5 format and make sure it's rgb, not bgr
 	return ((color[2] >> 3) << 11) | ((color[1] >> 2) << 5) | (color[0] >> 3);
 }
  
-unsigned int SimpleDXTEnc::encodeColors(const unsigned char* minColor, const unsigned char* maxColor) const
+unsigned int DXT1BlockEncode::encodeColors(const unsigned int* minColor, const unsigned int* maxColor) restrict(amp)
 {
 	unsigned int minBits = encodeOneColor(minColor);
 	unsigned int maxBits = encodeOneColor(maxColor);
 
 	// maxbits has to be greater, otherwise a 1-bit alpha channel is used (see specifications)
 	if (minBits > maxBits)
-		swap(minBits, maxBits);
+	{
+		unsigned int temp = minBits;
+		minBits = maxBits;
+		maxBits = temp;
+	}
 
 	return minBits << 16 | maxBits;
+}
+
+SimpleDXTEnc::SimpleDXTEnc(unsigned char* img, int w, int h) : 
+	width(w), height(h)
+{
+	pDecompressedBGRA = new unsigned int[width * height];
+
+	// transform each pixel consisting of 4 unsigned chars to one unsigned integer
+	for (int i = 0; i < w * h; ++i, img += 4)
+		pDecompressedBGRA[i] = img[0] << 24 | img[1] << 16 | img[2] << 8 | img[3];
+}
+
+
+SimpleDXTEnc::~SimpleDXTEnc()
+{
+	delete[] pDecompressedBGRA;
 }
 
 void SimpleDXTEnc::storeBits(unsigned int bits)
@@ -193,39 +206,64 @@ void SimpleDXTEnc::writeDDSHeader()
 
 bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 {
+	const unsigned int w = width, h = height;
+
 	// check if the width and the height are a multiple of 4 (they should be)
-	if (width % 4 || height % 4)
+	if (w % 4 || h % 4)
 		return false;
 
-	compressedSize = (width * height) / 4;
-	unsigned int* result = new unsigned int[compressedSize];
+	compressedSize = (w * h * 4) / 8; // compressed size in bytes
+	unsigned int* result = new unsigned int[compressedSize / 4];
 
 	array_view<const unsigned int, 2> uncompressedBGRA(height, width, pDecompressedBGRA); // input
-	array_view<unsigned int, 1> compressedDXT(compressedSize, result); // output
+	array_view<unsigned int, 1> compressedDXT(compressedSize / 4, result); // output
+	compressedDXT.discard_data();
 
 	parallel_for_each(
 		uncompressedBGRA.extent.tile<4, 4>(), 
 		[=](tiled_index<4, 4> idx) restrict(amp)
 		{
-			// pixels in the block, row by row
-			tile_static unsigned int block[4*4];
+			// pixels in the block, row by row, column by column, channels separated
+			tile_static unsigned int block[4*4*4];
+			const unsigned int color = uncompressedBGRA[idx.global];
+			const unsigned int offset = idx.local[0] * 16 + idx.local[1] * 4;
 
 			// fill the tile and wait till it's completed
-			block[idx.local[0]*4 + idx.local[1]] = uncompressedBGRA[idx.global];
+			block[offset+0] = (color >> 3) & 0xff; // blue
+			block[offset+1] = (color >> 2) & 0xff; // green
+			block[offset+2] = (color >> 1) & 0xff; // red
+			block[offset+3] = (color >> 0) & 0xff; // alpha
+
 			idx.barrier.wait();
 
 			// execute remainer only once
 			if (idx.local[0] != 0 || idx.local[1] != 0)
 				return;
 
-			// calculate end points
-
-			// calculate optimal indices to one of endpoints or interpolated values
+			// calculate endpoints and optimal indices
+			unsigned int minColor[4], maxColor[4];
+			unsigned int refColors = DXT1BlockEncode::calculateEndPoints(block, minColor, maxColor);
+			unsigned int optimalindices = DXT1BlockEncode::calculateIndices(block, minColor, maxColor);
 
 			// store the result (8 bytes)
+			const unsigned int tilesInRow = w / 4;
+			const unsigned int tileNum = idx.tile[0] * tilesInRow + idx.tile[1];
 
+			compressedDXT[tileNum * 2] = refColors;
+			compressedDXT[tileNum * 2 + 1] = optimalindices;
 		}
 	);
+
+	compressedDXT.synchronize();
+
+	// write the DDS header consisting of 128 bytes
+	pCompressedResult = pDXTCompressed;
+	writeDDSHeader();
+
+	for (int i = 0; i < compressedSize / 4; ++i)
+		storeBits(result[i]);
+
+	//delete[] result;
 
 	return true;
 }
