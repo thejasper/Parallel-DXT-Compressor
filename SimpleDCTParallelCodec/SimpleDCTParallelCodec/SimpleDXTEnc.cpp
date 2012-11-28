@@ -48,12 +48,6 @@ unsigned int DXT1BlockEncode::getColorDistance(const unsigned int* first, const 
 
 unsigned int DXT1BlockEncode::calculateEndPoints(const unsigned int* block, unsigned int* minColor, unsigned int* maxColor) restrict(amp)
 {
-	for (int i = 0; i < 3; ++i)
-	{
-		minColor[i] = 255;
-		maxColor[i] = 0;
-	}
-
 	// iterate colors in block
 	for (int i = 0; i < 16; ++i)
 	{
@@ -148,8 +142,8 @@ unsigned int DXT1BlockEncode::encodeColors(const unsigned int* minColor, const u
 	return minBits << 16 | maxBits;
 }
 
-SimpleDXTEnc::SimpleDXTEnc(unsigned char* img, int w, int h) : 
-	width(w), height(h)
+SimpleDXTEnc::SimpleDXTEnc(unsigned char* img, int w, int h) 
+	: width(w), height(h)
 {
 	pDecompressedBGRA = new unsigned int[width * height];
 
@@ -173,7 +167,6 @@ void SimpleDXTEnc::storeBits(unsigned int bits)
 	pCompressedResult += 4;
 }
 
-// DDS specifications: http://msdn.microsoft.com/en-us/library/windows/desktop/bb943991(v=vs.85).aspx
 void SimpleDXTEnc::writeDDSHeader()
 {
 	unsigned int code[] = {'D', 'X', 'T', '1'};
@@ -212,8 +205,8 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 	if (w % 4 || h % 4)
 		return false;
 
-	compressedSize = (w * h * 4) / 8; // compressed size in bytes
-	unsigned int* result = new unsigned int[compressedSize / 4];
+	compressedSize = (w * h * 4) / 8; // compressed size in bytes, dxt has compress ratio of 8:1
+	unsigned int* result = new unsigned int[compressedSize / 4]; // 4 bytes in 1 int
 
 	array_view<const unsigned int, 2> uncompressedBGRA(height, width, pDecompressedBGRA); // input
 	array_view<unsigned int, 1> compressedDXT(compressedSize / 4, result); // output
@@ -234,14 +227,13 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 			block[offset+2] = (color >> 1) & 0xff; // red
 			block[offset+3] = (color >> 0) & 0xff; // alpha
 
+			// make sure block is filled and execute remainer only once
 			idx.barrier.wait();
-
-			// execute remainer only once
 			if (idx.local[0] != 0 || idx.local[1] != 0)
 				return;
-
+			
 			// calculate endpoints and optimal indices
-			unsigned int minColor[4], maxColor[4];
+			unsigned int minColor[4] = {255}, maxColor[4] = {0};
 			unsigned int refColors = DXT1BlockEncode::calculateEndPoints(block, minColor, maxColor);
 			unsigned int optimalindices = DXT1BlockEncode::calculateIndices(block, minColor, maxColor);
 
