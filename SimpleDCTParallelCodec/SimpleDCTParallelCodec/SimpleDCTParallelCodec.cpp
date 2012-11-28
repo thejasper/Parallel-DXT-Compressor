@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 			verbose = true;
 		} else if (strcmp(argv[i], "-l") == 0) {
 			i++;
-			loops = atoi(argv[i]);
+			loops = (int)strtoul(argv[i],NULL,0);
 			if(loops == 0) {
 				fprintf(stderr, "Error reading loop count, set to 1\n");
 				loops = 1;
