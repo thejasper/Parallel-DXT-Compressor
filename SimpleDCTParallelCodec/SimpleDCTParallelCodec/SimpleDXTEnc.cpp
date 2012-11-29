@@ -84,11 +84,11 @@ unsigned int DXT1BlockEncode::calculateIndices(const unsigned int* block, const 
 
 	// save maximum, minimum and 2 interpolated colors for easy access
 	colors[0][0] = (maxColor[0] & MSB5_MASK) | (maxColor[0] >> 5);
-	colors[0][1] = (maxColor[1] & MSB6_MASK) | (maxColor[0] >> 6);
-	colors[0][2] = (maxColor[2] & MSB5_MASK) | (maxColor[0] >> 5);
+	colors[0][1] = (maxColor[1] & MSB6_MASK) | (maxColor[1] >> 6);
+	colors[0][2] = (maxColor[2] & MSB5_MASK) | (maxColor[2] >> 5);
 	colors[1][0] = (minColor[0] & MSB5_MASK) | (minColor[0] >> 5);
-	colors[1][1] = (minColor[1] & MSB6_MASK) | (minColor[0] >> 6);
-	colors[1][2] = (minColor[2] & MSB5_MASK) | (minColor[0] >> 5);
+	colors[1][1] = (minColor[1] & MSB6_MASK) | (minColor[1] >> 6);
+	colors[1][2] = (minColor[2] & MSB5_MASK) | (minColor[2] >> 5);
 	colors[2][0] = (2 * maxColor[0] + 1 * minColor[0]) / 3;
 	colors[2][1] = (2 * maxColor[1] + 1 * minColor[1]) / 3;
 	colors[2][2] = (2 * maxColor[2] + 1 * minColor[2]) / 3;
@@ -222,9 +222,9 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 			const unsigned int offset = idx.local[0] * 16 + idx.local[1] * 4;
 
 			// fill the tile and wait till it's completed
-			block[offset+0] = (color >> 3) & 0xff; // blue
-			block[offset+1] = (color >> 2) & 0xff; // green
-			block[offset+2] = (color >> 1) & 0xff; // red
+			block[offset+0] = (color >> 24) & 0xff; // blue
+			block[offset+1] = (color >> 16) & 0xff; // green
+			block[offset+2] = (color >> 8) & 0xff; // red
 			block[offset+3] = (color >> 0) & 0xff; // alpha
 
 			// make sure block is filled and execute remainer only once
