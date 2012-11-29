@@ -45,16 +45,8 @@ using namespace concurrency;
 
 int main(int argc, char* argv[])
 {
-	std::vector<accelerator> accs = accelerator::get_all();
-    for (int i = 0; i < accs.size(); i++) {
-        std::wcout << accs[i].device_path << "\n";
-        std::wcout << accs[i].dedicated_memory << "\n";
-        std::wcout << (accs[i].supports_double_precision ? 
-            "double precision: true" : "double precision: false") << "\n";    
-    }
-
 	// Our input parameters
-	std::string inputFilename = "small.tga";
+	std::string inputFilename = "small1.tga";
 
 	unsigned char* pOriginal;
 	int width;

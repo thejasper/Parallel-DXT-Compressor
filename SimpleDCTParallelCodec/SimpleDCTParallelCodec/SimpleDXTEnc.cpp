@@ -205,11 +205,11 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 	if (w % 4 || h % 4)
 		return false;
 
-	compressedSize = (w * h * 4) / 8; // compressed size in bytes, dxt has compress ratio of 8:1
-	unsigned int* result = new unsigned int[compressedSize / 4]; // 4 bytes in 1 int
+	const unsigned int dxtSize = (w * h * 4) / 8; // compressed size in bytes, dxt has compress ratio of 8:1
+	unsigned int* result = new unsigned int[dxtSize / 4]; // 4 bytes in 1 int
 
 	array_view<const unsigned int, 2> uncompressedBGRA(height, width, pDecompressedBGRA); // input
-	array_view<unsigned int, 1> compressedDXT(compressedSize / 4, result); // output
+	array_view<unsigned int, 1> compressedDXT(dxtSize / 4, result); // output
 	compressedDXT.discard_data();
 
 	parallel_for_each(
@@ -248,14 +248,13 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 
 	compressedDXT.synchronize();
 
-	// write the DDS header consisting of 128 bytes
+	// store the result 
 	pCompressedResult = pDXTCompressed;
+	compressedSize = 128 + dxtSize;
+
 	writeDDSHeader();
-
-	for (int i = 0; i < compressedSize / 4; ++i)
+	for (int i = 0; i < dxtSize / 4; ++i)
 		storeBits(result[i]);
-
-	//delete[] result;
 
 	return true;
 }
