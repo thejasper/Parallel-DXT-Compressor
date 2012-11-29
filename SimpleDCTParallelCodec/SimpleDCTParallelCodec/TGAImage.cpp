@@ -79,11 +79,10 @@ bool TGAImage::Read(std::string filename, int& width, int& height, unsigned char
 	FileSystem::ReadFileToMemory(filename, &buffer, bufferSize, 0);
 
 	// Read information from the tga header
-	
 	int bpp = buffer[16];
-	bool flipVertical = (buffer[17] >> 5) == 1;
+	bool flipVertical = (buffer[17] >> 5) == 0;
 
-	if (buffer[2] != 2 || (bpp != 24 && bpp != 32) || flipVertical)
+	if (buffer[2] != 2 || (bpp != 24 && bpp != 32))
 	{
 		// We need raw format and 24-bit or 32-bit pixels, unflipped
 		return false;
@@ -91,7 +90,7 @@ bool TGAImage::Read(std::string filename, int& width, int& height, unsigned char
 	
 	width = buffer[13] << 8 | buffer[12];
 	height = buffer[15] << 8 | buffer[14];	
-	const int pitch = width*bpp/8;	
+	const int pitch = width*bpp/8; // num bytes per line
 			 
 	unsigned char* line = (flipVertical ? buffer + imgStart + (height-1) * pitch : buffer + imgStart);
 	int step = (flipVertical ? -pitch : pitch);

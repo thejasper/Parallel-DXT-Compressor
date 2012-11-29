@@ -36,4 +36,3 @@ public:
 	void Write(int width, int height, unsigned char* pPayload, std::string filename);
 	bool Read(std::string filename, int& width, int& height, unsigned char** ppPayload);
 };
-

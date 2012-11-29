@@ -84,11 +84,11 @@ unsigned int DXT1BlockEncode::calculateIndices(const unsigned int* block, const 
 
 	// save maximum, minimum and 2 interpolated colors for easy access
 	colors[0][0] = (maxColor[0] & MSB5_MASK) | (maxColor[0] >> 5);
-	colors[0][1] = (maxColor[1] & MSB6_MASK) | (maxColor[0] >> 6);
-	colors[0][2] = (maxColor[2] & MSB5_MASK) | (maxColor[0] >> 5);
+	colors[0][1] = (maxColor[1] & MSB6_MASK) | (maxColor[1] >> 6);
+	colors[0][2] = (maxColor[2] & MSB5_MASK) | (maxColor[2] >> 5);
 	colors[1][0] = (minColor[0] & MSB5_MASK) | (minColor[0] >> 5);
-	colors[1][1] = (minColor[1] & MSB6_MASK) | (minColor[0] >> 6);
-	colors[1][2] = (minColor[2] & MSB5_MASK) | (minColor[0] >> 5);
+	colors[1][1] = (minColor[1] & MSB6_MASK) | (minColor[1] >> 6);
+	colors[1][2] = (minColor[2] & MSB5_MASK) | (minColor[2] >> 5);
 	colors[2][0] = (2 * maxColor[0] + 1 * minColor[0]) / 3;
 	colors[2][1] = (2 * maxColor[1] + 1 * minColor[1]) / 3;
 	colors[2][2] = (2 * maxColor[2] + 1 * minColor[2]) / 3;
@@ -205,11 +205,11 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 	if (w % 4 || h % 4)
 		return false;
 
-	compressedSize = (w * h * 4) / 8; // compressed size in bytes, dxt has compress ratio of 8:1
-	unsigned int* result = new unsigned int[compressedSize / 4]; // 4 bytes in 1 int
+	const unsigned int dxtSize = (w * h * 4) / 8; // compressed size in bytes, dxt has compress ratio of 8:1
+	unsigned int* result = new unsigned int[dxtSize / 4]; // 4 bytes in 1 int
 
 	array_view<const unsigned int, 2> uncompressedBGRA(height, width, pDecompressedBGRA); // input
-	array_view<unsigned int, 1> compressedDXT(compressedSize / 4, result); // output
+	array_view<unsigned int, 1> compressedDXT(dxtSize / 4, result); // output
 	compressedDXT.discard_data();
 
 	parallel_for_each(
@@ -222,9 +222,9 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 			const unsigned int offset = idx.local[0] * 16 + idx.local[1] * 4;
 
 			// fill the tile and wait till it's completed
-			block[offset+0] = (color >> 3) & 0xff; // blue
-			block[offset+1] = (color >> 2) & 0xff; // green
-			block[offset+2] = (color >> 1) & 0xff; // red
+			block[offset+0] = (color >> 24) & 0xff; // blue
+			block[offset+1] = (color >> 16) & 0xff; // green
+			block[offset+2] = (color >> 8) & 0xff; // red
 			block[offset+3] = (color >> 0) & 0xff; // alpha
 
 			// make sure block is filled and execute remainer only once
@@ -248,14 +248,13 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 
 	compressedDXT.synchronize();
 
-	// write the DDS header consisting of 128 bytes
+	// store the result 
 	pCompressedResult = pDXTCompressed;
+	compressedSize = 128 + dxtSize;
+
 	writeDDSHeader();
-
-	for (int i = 0; i < compressedSize / 4; ++i)
+	for (int i = 0; i < dxtSize / 4; ++i)
 		storeBits(result[i]);
-
-	//delete[] result;
 
 	return true;
 }
