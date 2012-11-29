@@ -49,9 +49,13 @@ using namespace concurrency;
 int main(int argc, char* argv[])
 {
 	// Our input parameters
+	std::string inputFilename = "input.tga";
 	std::string outputFilename = "DXTCompressed.dds";
 	bool verbose = false;
 	int loops = 1;
+	
+	// Our timer parameters
+	LARGE_INTEGER startTime, endTime, freq;
 
 	std::vector<accelerator> accs = accelerator::get_all();
     for (int i = 0; i < accs.size(); i++) {
@@ -60,9 +64,6 @@ int main(int argc, char* argv[])
         std::wcout << (accs[i].supports_double_precision ? 
             "double precision: true" : "double precision: false") << "\n";    
     }
-
-	// Our timer parameters
-	LARGE_INTEGER startTime, endTime, freq;
 
 	for (int i=1; i<argc; ++i) {
 		if (strcmp(argv[i],  "-i") == 0) {
@@ -85,9 +86,6 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
-
-	//http://msdn.microsoft.com/en-us/library/hh873132.aspx
-	//std::vector<accelerator> accs = accelerator::get_all();
 
 	unsigned char* pOriginal;
 	int width;
