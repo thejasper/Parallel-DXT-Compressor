@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="PSNRTools.h" />
     <ClInclude Include="SimpleDCTDec.h" />
     <ClInclude Include="SimpleDCTEnc.h" />
     <ClInclude Include="SimpleDXTEnc.h" />
@@ -90,6 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="PSNRTools.cpp" />
     <ClCompile Include="SimpleDCTDec.cpp" />
     <ClCompile Include="SimpleDCTEnc.cpp" />
     <ClCompile Include="SimpleDCTParallelCodec.cpp" />
