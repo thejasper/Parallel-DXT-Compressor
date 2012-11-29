@@ -38,6 +38,7 @@
 #include "TGAImage.h"
 #include <Windows.h>
 #include "PSNRTools.h"
+#include <sstream>
 
 int main(int argc, char* argv[])
 {
@@ -61,7 +62,10 @@ int main(int argc, char* argv[])
 			verbose = true;
 		} else if (strcmp(argv[i], "-l") == 0) {
 			i++;
-			loops = (int)strtoul(argv[i],NULL,0);
+			std::string sgNumber = argv[i];
+			std::stringstream smNumber(sgNumber);
+
+			smNumber >> loops;
 			if(loops == 0) {
 				fprintf(stderr, "Error reading loop count, set to 1\n");
 				loops = 1;
