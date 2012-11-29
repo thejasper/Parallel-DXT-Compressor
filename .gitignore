@@ -84,3 +84,4 @@ packages/
 *.dxt
 SimpleDCTParallelCodec/SimpleDCTParallelCodec/Decompressed.tga
 *.dds
+*.orig

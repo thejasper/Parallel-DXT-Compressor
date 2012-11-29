@@ -34,29 +34,31 @@
 #define MSB5_MASK 0xF8 // the 5 most significant bits are 1
 #define MSB6_MASK 0xFC // the 6 most significant bits are 1
 
+class DXT1BlockEncode
+{
+public:
+	static unsigned int getColorDistance(const unsigned int* first, const unsigned int* second) restrict(amp);
+
+	static unsigned int encodeOneColor(const unsigned int* color) restrict(amp);
+	static unsigned int encodeColors(const unsigned int* minColor, const unsigned int* maxColor) restrict(amp);
+
+	static unsigned int calculateEndPoints(const unsigned int* block, unsigned int* minColor, unsigned int* maxColor) restrict(amp);
+	static unsigned int calculateIndices(const unsigned int* block, const unsigned int* minColor, const unsigned int* maxColor) restrict(amp);
+};
+
 class SimpleDXTEnc
 {
 private:
-	static const int blockSize = 4;
-
 	const int width, height;
-	unsigned char* pDecompressedBGRA, *pCompressedResult;
-
-	unsigned int getColorDistance(const unsigned char* first, const unsigned char* second) const;
-	void transformBlock(const unsigned char* first, unsigned char* result) const;
-
-	void calculateEndPoints(const unsigned char* block, unsigned char* minColor, unsigned char* maxColor) const;
-	unsigned int calculateIndices(const unsigned char* block, const unsigned char* minColor, const unsigned char* maxColor) const;
-
-	unsigned short encodeOneColor(const unsigned char* color) const;
-	unsigned int encodeColors(const unsigned char* minColor, const unsigned char* maxColor) const;
-
-	void storeBits(unsigned int bits);
-	void writeDDSHeader();
+	unsigned int* pDecompressedBGRA;
+	unsigned char* pCompressedResult;
 
 public:
 	SimpleDXTEnc(unsigned char* img, int w, int h);
 	~SimpleDXTEnc();
+
+	void storeBits(unsigned int bits);
+	void writeDDSHeader();
 
 	bool compress(unsigned char* pDXTCompressed, int& compressedSize);
 };

@@ -31,6 +31,10 @@
 
 #include "stdafx.h"
 
+#include <vector>
+
+#include "amp.h"
+
 #include "SimpleDCTDec.h"
 #include "SimpleDCTEnc.h"
 #include "SimpleDXTEnc.h"
@@ -40,13 +44,22 @@
 #include "PSNRTools.h"
 #include <sstream>
 
+using namespace concurrency;
+
 int main(int argc, char* argv[])
 {
 	// Our input parameters
-	std::string inputFilename = "input.tga";
 	std::string outputFilename = "DXTCompressed.dds";
 	bool verbose = false;
 	int loops = 1;
+
+	std::vector<accelerator> accs = accelerator::get_all();
+    for (int i = 0; i < accs.size(); i++) {
+        std::wcout << accs[i].device_path << "\n";
+        std::wcout << accs[i].dedicated_memory << "\n";
+        std::wcout << (accs[i].supports_double_precision ? 
+            "double precision: true" : "double precision: false") << "\n";    
+    }
 
 	// Our timer parameters
 	LARGE_INTEGER startTime, endTime, freq;
@@ -75,7 +88,7 @@ int main(int argc, char* argv[])
 
 	//http://msdn.microsoft.com/en-us/library/hh873132.aspx
 	//std::vector<accelerator> accs = accelerator::get_all();
-	
+
 	unsigned char* pOriginal;
 	int width;
 	int height;
