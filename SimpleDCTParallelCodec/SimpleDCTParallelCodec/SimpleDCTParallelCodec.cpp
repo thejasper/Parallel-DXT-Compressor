@@ -146,13 +146,12 @@ int main(int argc, char* argv[])
 	//Calculate PSNR Value
 	PSNRTools::PSNR_INFO psnrResult;
 	PSNRTools::CalculatePSNRFromRGBA(psnrResult, pDXTCompressed, pDecompressedBGRA, width, height);
-	double averagePSNR = (psnrResult.u.psnr + psnrResult.v.psnr + psnrResult.y.psnr) / 3;
 
 	FileSystem::WriteMemoryToFile(outputFilename, pDXTCompressed, compressedSize);
 
 	float averageTime = (float)(endTime.LowPart - startTime.LowPart)*1000/(freq.LowPart * loops); //Calculate the average time
 	
-	std::cout << averageTime << ", " << averagePSNR << ", ";
+	std::cout << averageTime << ", " << psnrResult.y.psnr << ", ";
 	std::cout << "Desmadryl" << ", Cockaerts" << std::endl;
 
 	if(verbose)system("pause");
