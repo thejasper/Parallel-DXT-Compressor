@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "amp.h"
+#include <amp.h>
 
 #define INSET_SHIFT 4
 #define MSB5_MASK 0xF8 // the 5 most significant bits are 1

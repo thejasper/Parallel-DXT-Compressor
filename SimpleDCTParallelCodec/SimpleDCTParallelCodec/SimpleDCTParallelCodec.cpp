@@ -31,75 +31,61 @@
 
 #include "stdafx.h"
 
+#include <sstream>
 #include <vector>
-
-#include "amp.h"
+#include <Windows.h>
 
 #include "SimpleDCTDec.h"
 #include "SimpleDCTEnc.h"
 #include "SimpleDXTEnc.h"
 #include "FileSystem.h"
 #include "TGAImage.h"
-#include <Windows.h>
 #include "PSNRTools.h"
-#include <sstream>
 
+using namespace std;
 using namespace concurrency;
 
 int main(int argc, char* argv[])
 {
-	// Our input parameters
-	std::string inputFilename = "small.tga";
-	std::string outputFilename = "DXTCompressed.dds";
+	unsigned char* pOriginal;
+	int width, height;
+
+	// our default input parameters
+	string inputFilename = "small.tga";
+	string outputFilename = "DXTCompressed.dds";
 	bool verbose = false;
 	int loops = 1;
 	
-	// Our timer parameters
+	// our timer parameters
 	LARGE_INTEGER startTime, endTime, freq;
 
-	std::vector<accelerator> accs = accelerator::get_all();
-    for (int i = 0; i < accs.size(); i++) {
-        std::wcout << accs[i].device_path << "\n";
-        std::wcout << accs[i].dedicated_memory << "\n";
-        std::wcout << (accs[i].supports_double_precision ? 
-            "double precision: true" : "double precision: false") << "\n";    
-    }
-
-	for (int i=1; i<argc; ++i) {
-		if (strcmp(argv[i],  "-i") == 0) {
-			i++;
-			inputFilename = argv[i];
-		} else if (strcmp(argv[i], "-o") == 0) {
-			i++;
-			outputFilename = argv[i];
-		} else if (strcmp(argv[i], "-verbose") == 0) {
+	// parse command line arguments
+	for (int i = 1; i < argc; ++i) 
+	{
+		if (strcmp(argv[i],  "-i") == 0) 
+			inputFilename = argv[++i];
+		else if (strcmp(argv[i], "-o") == 0) 
+			outputFilename = argv[++i];
+		else if (strcmp(argv[i], "-verbose") == 0) 
 			verbose = true;
-		} else if (strcmp(argv[i], "-l") == 0) {
-			i++;
-			std::string sgNumber = argv[i];
-			std::stringstream smNumber(sgNumber);
+		else if (strcmp(argv[i], "-l") == 0) 
+		{
+			stringstream ss(argv[++i]);
+			ss >> loops;
 
-			smNumber >> loops;
-			if(loops == 0) {
+			if (loops <= 0)
 				fprintf(stderr, "Error reading loop count, set to 1\n");
-				loops = 1;
-			}
 		}
 	}
 
-	unsigned char* pOriginal;
-	int width;
-	int height;
-	
-	if(verbose) std::cout << "Reading TGA..." << std::endl;
+	// read tga image
+	if (verbose) cout << "Reading TGA..." << endl;
 	TGAImage inputImage; 
-	inputImage.Read(inputFilename, width, height, &pOriginal); // TGA contains 24-bit pixels (BGR)
-	size_t pictureSize = width*height*4;	// We use 32-bit pixels (RGBA)
-	// pOriginal now contains the entire input file
+	inputImage.Read(inputFilename, width, height, &pOriginal);
+	size_t pictureSize = width*height*4;
 
-	
-	if(verbose) std::cout << "Compressing TGA with JPEG YCoCg..." << std::endl;
-	// We allocate memory to store the compresses file (presume double the amount of bits will suffice)
+	// compress to jpeg
+	if (verbose) cout << "Compressing TGA with JPEG YCoCg..." << endl;
 	unsigned char* pCompressed = new unsigned char[pictureSize*2];
 	int compressedSize = 0;
 	SimpleDCTEnc encoder;
@@ -108,11 +94,10 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Error compressing input file\n");
 		return -1;
 	}
-	// pCompressed now contains our compressed file
 	FileSystem::WriteMemoryToFile("Compressed.out", pCompressed, compressedSize);
 	
-	
-	if(verbose) std::cout << "Decompressing JPEG YCoCg..." << std::endl;
+	// decompress jpeg
+	if (verbose) cout << "Decompressing JPEG YCoCg..." << endl;
 	unsigned char* pDecompressedBGRA = new unsigned char[pictureSize];
 	SimpleDCTDec decoder;
 	if (!decoder.decompress(pDecompressedBGRA, pCompressed, width, height, compressedSize))
@@ -120,43 +105,38 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Error decompressing buffer\n");
 		return -1;
 	}
-
-	// pCompressed now contains our compressed file	
-	// Write output to disk
 	TGAImage outputImage;
 	outputImage.Write(width, height, pDecompressedBGRA, "Decompressed.tga");	
 
-	if(verbose) std::cout << "Compressing with DXT..." << std::endl;
+	// compress to dxt1
+	if (verbose) cout << "Compressing with DXT..." << endl;
 	SimpleDXTEnc dxtEncoder(pDecompressedBGRA, width, height);
 	unsigned char* pDXTCompressed = new unsigned char[pictureSize*2];
-	QueryPerformanceCounter(&startTime);  //Start of the timer
-	for (int i=1; i<=loops; i++) {
-		if(verbose) std::cout << "-" << i;
+	QueryPerformanceCounter(&startTime);
+	for (int i = 1; i <= loops; i++) {
+		if (verbose) cout << '.';
 		if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
 		{
 			fprintf(stderr, "Error compressing buffer with dxt\n");
 			return -1;
 		}
 	}
-	if(verbose)  std::cout << std::endl;
-	QueryPerformanceCounter(&endTime); //End of the timer
-	QueryPerformanceFrequency(&freq); //Get the frequency
-	//TODO Synchronise with GPU!
+	if (verbose) cout << endl;
+	QueryPerformanceCounter(&endTime);
+	QueryPerformanceFrequency(&freq);
 
-	//Calculate PSNR Value
-	PSNRTools::PSNR_INFO psnrResult;
-	PSNRTools::CalculatePSNRFromRGBA(psnrResult, pDXTCompressed, pDecompressedBGRA, width, height);
-
+	// write results
 	FileSystem::WriteMemoryToFile(outputFilename, pDXTCompressed, compressedSize);
 
-	float averageTime = (float)(endTime.LowPart - startTime.LowPart)*1000/(freq.LowPart * loops); //Calculate the average time
+	PSNRTools::PSNR_INFO psnrResult;
+	PSNRTools::CalculatePSNRFromRGBA(psnrResult, pDXTCompressed, pDecompressedBGRA, width, height);
+	float averageTime = (float)(endTime.LowPart - startTime.LowPart) * 1000 / (freq.LowPart * loops);
 	
-	std::cout << averageTime << ", " << psnrResult.y.psnr << ", ";
-	std::cout << "Desmadryl" << ", Cockaerts" << std::endl;
+	cout << averageTime << ", " << psnrResult.y.psnr << ", " << "Desmadryl" << ", Cockaerts" << endl;
 
-	if(verbose)system("pause");
-	if(verbose) std::cout << "Exiting..." << std::endl;
+	if (verbose) cout << "Exiting..." << endl;
 	
+	// clean up
 	delete pOriginal;
 	delete pCompressed;
 	delete pDecompressedBGRA;
@@ -164,4 +144,3 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-
