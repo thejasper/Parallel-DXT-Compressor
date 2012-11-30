@@ -80,7 +80,7 @@ bool TGAImage::Read(std::string filename, int& width, int& height, unsigned char
 
 	// Read information from the tga header
 	int bpp = buffer[16];
-	bool flipVertical = (buffer[17] >> 5) == 0;
+	bool flipVertical = ((buffer[17] >> 5) & 0x01) == 0;
 
 	if (buffer[2] != 2 || (bpp != 24 && bpp != 32))
 	{

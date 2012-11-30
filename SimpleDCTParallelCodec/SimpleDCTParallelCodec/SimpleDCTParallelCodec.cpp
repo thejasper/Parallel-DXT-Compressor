@@ -50,6 +50,7 @@ int main(int argc, char* argv[])
 {
 	// Our input parameters
 	std::string inputFilename = "input.tga";
+<<<<<<< origin/GPU_Continued
 	std::string outputFilename = "DXTCompressed.dds";
 	bool verbose = false;
 	int loops = 1;
@@ -86,6 +87,8 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
+=======
+>>>>>>> local
 
 	unsigned char* pOriginal;
 	int width;
