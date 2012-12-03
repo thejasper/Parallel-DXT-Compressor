@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
 	SimpleDXTEnc dxtEncoder(pDecompressedBGRA, width, height);
 	unsigned char* pDXTCompressed = new unsigned char[pictureSize*2];
 	QueryPerformanceCounter(&startTime);
-	for (int i = 1; i <= loops; i++) {
+	for (int i = 0; i < loops; i++) {
 		if (verbose) cout << '.';
 		if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
 		{
