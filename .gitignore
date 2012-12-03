@@ -85,3 +85,6 @@ packages/
 SimpleDCTParallelCodec/SimpleDCTParallelCodec/Decompressed.tga
 *.dds
 *.orig
+libsquish-read-only/images/
+libsquish-read-only/vs7/
+libsquish-read-only/vs8/

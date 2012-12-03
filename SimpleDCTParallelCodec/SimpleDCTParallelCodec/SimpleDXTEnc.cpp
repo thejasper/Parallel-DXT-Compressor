@@ -131,14 +131,6 @@ unsigned int DXT1BlockEncode::encodeColors(const unsigned int* minColor, const u
 	unsigned int minBits = encodeOneColor(minColor);
 	unsigned int maxBits = encodeOneColor(maxColor);
 
-	// maxbits has to be greater, otherwise a 1-bit alpha channel is used (see specifications)
-	if (minBits > maxBits)
-	{
-		unsigned int temp = minBits;
-		minBits = maxBits;
-		maxBits = temp;
-	}
-
 	return minBits << 16 | maxBits;
 }
 
@@ -234,8 +226,8 @@ bool SimpleDXTEnc::compress(unsigned char* pDXTCompressed, int& compressedSize)
 			
 			// calculate endpoints and optimal indices
 			unsigned int minColor[4] = {255}, maxColor[4] = {0};
-			unsigned int refColors = DXT1BlockEncode::calculateEndPoints(block, minColor, maxColor);
-			unsigned int optimalindices = DXT1BlockEncode::calculateIndices(block, minColor, maxColor);
+			const unsigned int refColors = DXT1BlockEncode::calculateEndPoints(block, minColor, maxColor);
+			const unsigned int optimalindices = DXT1BlockEncode::calculateIndices(block, minColor, maxColor);
 
 			// store the result (8 bytes)
 			const unsigned int tilesInRow = w / 4;

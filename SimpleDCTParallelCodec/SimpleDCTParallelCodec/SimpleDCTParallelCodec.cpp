@@ -41,6 +41,7 @@
 #include "FileSystem.h"
 #include "TGAImage.h"
 #include "PSNRTools.h"
+#include "squish.h"
 
 using namespace std;
 using namespace concurrency;
@@ -113,7 +114,8 @@ int main(int argc, char* argv[])
 	SimpleDXTEnc dxtEncoder(pDecompressedBGRA, width, height);
 	unsigned char* pDXTCompressed = new unsigned char[pictureSize*2];
 	QueryPerformanceCounter(&startTime);
-	for (int i = 0; i < loops; i++) {
+	for (int i = 0; i < loops; i++) 
+	{
 		if (verbose) cout << '.';
 		if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
 		{
@@ -128,6 +130,11 @@ int main(int argc, char* argv[])
 	// write results
 	FileSystem::WriteMemoryToFile(outputFilename, pDXTCompressed, compressedSize);
 
+	// dxt decompressen (squish gebruikt rgba volgorde)
+	unsigned char* pDecompressedDXT = new unsigned char[width * height * 4];
+	squish::DecompressImage(pDecompressedDXT, width, height, pDXTCompressed + 128, squish::kDxt1);
+
+	// TODO: nu nog vergelijken 
 	PSNRTools::PSNR_INFO psnrResult;
 	PSNRTools::CalculatePSNRFromRGBA(psnrResult, pDXTCompressed, pDecompressedBGRA, width, height);
 	float averageTime = (float)(endTime.LowPart - startTime.LowPart) * 1000 / (freq.LowPart * loops);
@@ -141,6 +148,7 @@ int main(int argc, char* argv[])
 	delete pCompressed;
 	delete pDecompressedBGRA;
 	delete pDXTCompressed;
+	delete pDecompressedDXT;
 
 	return 0;
 }
