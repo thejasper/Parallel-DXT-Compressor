@@ -90,4 +90,20 @@ namespace PSNRTools
 		free(yuv1);
 		free(yuv2);
 	}
+
+	void ConvertFromBGRAtoRGBA(unsigned char* input, int pixel_width, int pixel_height)
+	{
+		int offset = 0;
+		unsigned char temp;
+
+		for (int y = 0; y < pixel_height; y++) {
+			for (int x = 0; x < pixel_width; x++) {
+				temp = input[offset];
+				input[offset] = input[offset + 2];
+				input[offset + 2] = temp;
+
+				offset += 4;
+			}
+		}
+	}
 }

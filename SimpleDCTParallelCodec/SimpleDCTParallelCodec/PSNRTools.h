@@ -17,5 +17,6 @@ namespace PSNRTools
 		PSNR_PLANE_INFO v;
 	};
 
+	void ConvertFromBGRAtoRGBA(unsigned char* input, int pixel_width, int pixel_height);
 	void CalculatePSNRFromRGBA(PSNR_INFO& psnr, const unsigned char* rgba1, const unsigned char* rgba2, int width, int height);
 }

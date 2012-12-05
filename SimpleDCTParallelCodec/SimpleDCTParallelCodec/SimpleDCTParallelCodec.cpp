@@ -133,10 +133,13 @@ int main(int argc, char* argv[])
 	// dxt decompressen (squish gebruikt rgba volgorde)
 	unsigned char* pDecompressedDXT = new unsigned char[width * height * 4];
 	squish::DecompressImage(pDecompressedDXT, width, height, pDXTCompressed + 128, squish::kDxt1);
+	
+	unsigned char* pDecompressedRGBA = pDecompressedBGRA; // Nieuwe pointer om naamverwarring te voorkomen
+	PSNRTools::ConvertFromBGRAtoRGBA(pDecompressedRGBA, width, height); // Kleurvolgorde aanpassen, pDecompressedBGRA is niet meer geldig als naam
 
-	// TODO: nu nog vergelijken 
+	// PSNR bepalen en resultaat uitvoeren
 	PSNRTools::PSNR_INFO psnrResult;
-	PSNRTools::CalculatePSNRFromRGBA(psnrResult, pDXTCompressed, pDecompressedBGRA, width, height);
+	PSNRTools::CalculatePSNRFromRGBA(psnrResult, pDecompressedDXT, pDecompressedRGBA, width, height);
 	float averageTime = (float)(endTime.LowPart - startTime.LowPart) * 1000 / (freq.LowPart * loops);
 	
 	cout << averageTime << ", " << psnrResult.y.psnr << ", " << "Desmadryl" << ", Cockaerts" << endl;
