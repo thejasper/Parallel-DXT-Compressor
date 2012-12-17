@@ -1,18 +1,35 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 11
+# Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleDCTParallelCodec", "SimpleDCTParallelCodec\SimpleDCTParallelCodec.vcxproj", "{98669EFC-DE90-B01D-536B-017CA5BF740C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6A8518C3-D81A-4428-BD7F-C37933088AC1} = {6A8518C3-D81A-4428-BD7F-C37933088AC1}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "squish", "..\libsquish-read-only\vs9\squish\squish.vcxproj", "{6A8518C3-D81A-4428-BD7F-C37933088AC1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
 		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Debug|Win32.ActiveCfg = Debug|Win32
 		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Debug|Win32.Build.0 = Debug|Win32
+		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Debug|x64.ActiveCfg = Debug|Win32
 		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Release|Win32.ActiveCfg = Release|Win32
 		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Release|Win32.Build.0 = Release|Win32
+		{98669EFC-DE90-B01D-536B-017CA5BF740C}.Release|x64.ActiveCfg = Release|Win32
+		{6A8518C3-D81A-4428-BD7F-C37933088AC1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6A8518C3-D81A-4428-BD7F-C37933088AC1}.Debug|Win32.Build.0 = Debug|Win32
+		{6A8518C3-D81A-4428-BD7F-C37933088AC1}.Debug|x64.ActiveCfg = Debug|x64
+		{6A8518C3-D81A-4428-BD7F-C37933088AC1}.Debug|x64.Build.0 = Debug|x64
+		{6A8518C3-D81A-4428-BD7F-C37933088AC1}.Release|Win32.ActiveCfg = Release|Win32
+		{6A8518C3-D81A-4428-BD7F-C37933088AC1}.Release|Win32.Build.0 = Release|Win32
+		{6A8518C3-D81A-4428-BD7F-C37933088AC1}.Release|x64.ActiveCfg = Release|x64
+		{6A8518C3-D81A-4428-BD7F-C37933088AC1}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

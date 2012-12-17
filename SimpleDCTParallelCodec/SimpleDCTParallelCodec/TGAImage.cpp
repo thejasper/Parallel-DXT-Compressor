@@ -56,11 +56,7 @@ void TGAImage::Write(int width, int height, unsigned char* pPayloadBGRA, std::st
 	buffer[14] = height & 255;
 	buffer[15] = height >> 8;
 	buffer[16] = 24;	// pixel size
-	if ( !flipVertical ) 
-	{
-		buffer[17] = (1<<5);	// flip bit, for normal top to bottom raster order
-	}
-
+	
 	// swap rgb to bgr
 	for ( int i=imgStart, j=0 ; i<bufferSize ; i+=3, j+=4 ) 
 	{
@@ -83,27 +79,52 @@ bool TGAImage::Read(std::string filename, int& width, int& height, unsigned char
 	FileSystem::ReadFileToMemory(filename, &buffer, bufferSize, 0);
 
 	// Read information from the tga header
-	
-	if (buffer[2] != 2 || buffer[16] != 24)
+	int bpp = buffer[16];
+	bool flipVertical = ((buffer[17] >> 5) & 0x01) == 0;
+
+	if (buffer[2] != 2 || (bpp != 24 && bpp != 32))
 	{
-		// We need raw format and 24-bit pixels
+		// We need raw format and 24-bit or 32-bit pixels, unflipped
 		return false;
 	}
-
+	
 	width = buffer[13] << 8 | buffer[12];
-	height = buffer[15] << 8 | buffer[14];
-		
-	bool flipVertical = (buffer[17] >> 5) == 1;
+	height = buffer[15] << 8 | buffer[14];	
+	const int pitch = width*bpp/8; // num bytes per line
 			 
-	unsigned char* payload = new unsigned char[width * height * 4];
+	unsigned char* line = (flipVertical ? buffer + imgStart + (height-1) * pitch : buffer + imgStart);
+	int step = (flipVertical ? -pitch : pitch);
 
-	// swap rgb to bgr
-	for ( size_t i=imgStart, j=0 ; i<bufferSize ; i+=3, j+=4) 
+	unsigned char* payload = new unsigned char[width * height * 4];
+	unsigned char* dst = payload;
+	
+	if (bpp == 24)
 	{
-		payload[j+0] = buffer[i+2]; 	// blue
-		payload[j+1] = buffer[i+1];		// green
-		payload[j+2] = buffer[i+0];		// red
-		payload[j+3] = 255;				// alpha
+		for (int y=0;y<height;++y, line += step)
+		{
+			for ( int x=0; x<pitch; x+=3, dst+=4)
+			{
+				// swap rgb to bgr
+				dst[0] = line[x+2]; 	// blue
+				dst[1] = line[x+1];		// green
+				dst[2] = line[x+0];		// red
+				dst[3] = 255;			// alpha
+			}
+		}
+	}
+	else if (bpp == 32)
+	{
+		for (int y=0;y<height;++y, line += step)
+		{
+			for ( int x=0,j=0; x<pitch; x+=4, dst+=4)
+			{
+				// swap rgb to bgr
+				dst[0] = line[x+2]; 	// blue
+				dst[1] = line[x+1];	// green
+				dst[2] = line[x+0];	// red
+				dst[3] = line[x+3];	// alpha
+			}
+		}
 	}
 
 	*ppPayload = payload;

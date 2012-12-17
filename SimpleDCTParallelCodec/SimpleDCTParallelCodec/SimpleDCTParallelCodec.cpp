@@ -31,31 +31,61 @@
 
 #include "stdafx.h"
 
+#include <sstream>
+#include <vector>
+#include <Windows.h>
+
 #include "SimpleDCTDec.h"
 #include "SimpleDCTEnc.h"
 #include "SimpleDXTEnc.h"
 #include "FileSystem.h"
 #include "TGAImage.h"
+#include "PSNRTools.h"
+#include "squish.h"
 
+using namespace std;
 
 int main(int argc, char* argv[])
 {
-	// Our input parameters
-	std::string inputFilename = "input.tga";
-	
 	unsigned char* pOriginal;
-	int width;
-	int height;
-	
-	std::cout << "Reading TGA..." << std::endl;
-	TGAImage inputImage; 
-	inputImage.Read(inputFilename, width, height, &pOriginal); // TGA contains 24-bit pixels (BGR)
-	size_t pictureSize = width*height*4;	// We use 32-bit pixels (RGBA)
-	// pOriginal now contains the entire input file
+	int width, height;
 
+	// our default input parameters
+	string inputFilename = "alchemist_goblin_head_color.tga";
+	string outputFilename = "DXTCompressed.dds";
+	bool verbose = false;
+	int loops = 1;
 	
-	std::cout << "Compressing TGA with JPEG YCoCg..." << std::endl;
-	// We allocate memory to store the compresses file (presume double the amount of bits will suffice)
+	// our timer parameters
+	LARGE_INTEGER startTime, endTime, freq;
+
+	// parse command line arguments
+	for (int i = 1; i < argc; ++i) 
+	{
+		if (strcmp(argv[i],  "-i") == 0) 
+			inputFilename = argv[++i];
+		else if (strcmp(argv[i], "-o") == 0) 
+			outputFilename = argv[++i];
+		else if (strcmp(argv[i], "-verbose") == 0) 
+			verbose = true;
+		else if (strcmp(argv[i], "-l") == 0) 
+		{
+			stringstream ss(argv[++i]);
+			ss >> loops;
+
+			if (loops <= 0)
+				fprintf(stderr, "Error reading loop count, set to 1\n");
+		}
+	}
+
+	// read tga image
+	if (verbose) cout << "Reading TGA..." << endl;
+	TGAImage inputImage; 
+	inputImage.Read(inputFilename, width, height, &pOriginal);
+	size_t pictureSize = width*height*4;
+
+	// compress to jpeg
+	if (verbose) cout << "Compressing TGA with JPEG YCoCg..." << endl;
 	unsigned char* pCompressed = new unsigned char[pictureSize*2];
 	int compressedSize = 0;
 	SimpleDCTEnc encoder;
@@ -64,11 +94,10 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Error compressing input file\n");
 		return -1;
 	}
-	// pCompressed now contains our compressed file
 	FileSystem::WriteMemoryToFile("Compressed.out", pCompressed, compressedSize);
 	
-	
-	std::cout << "Decompressing JPEG YCoCg..." << std::endl;
+	// decompress jpeg
+	if (verbose) cout << "Decompressing JPEG YCoCg..." << endl;
 	unsigned char* pDecompressedBGRA = new unsigned char[pictureSize];
 	SimpleDCTDec decoder;
 	if (!decoder.decompress(pDecompressedBGRA, pCompressed, width, height, compressedSize))
@@ -76,28 +105,52 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Error decompressing buffer\n");
 		return -1;
 	}
-	// pCompressed now contains our compressed file	
-	// Write output to disk
 	TGAImage outputImage;
 	outputImage.Write(width, height, pDecompressedBGRA, "Decompressed.tga");	
 
-	std::cout << "Compressing with DXT..." << std::endl;
+	// compress to dxt1
+	if (verbose) cout << "Compressing with DXT..." << endl;
 	SimpleDXTEnc dxtEncoder(pDecompressedBGRA, width, height);
 	unsigned char* pDXTCompressed = new unsigned char[pictureSize*2];
-	if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
+	QueryPerformanceCounter(&startTime);
+	for (int i = 0; i < loops; i++) 
 	{
-		fprintf(stderr, "Error compressing buffer with dxt\n");
-		return -1;
+		if (verbose) cout << '.';
+		if (!dxtEncoder.compress(pDXTCompressed, compressedSize))
+		{
+			fprintf(stderr, "Error compressing buffer with dxt\n");
+			return -1;
+		}
 	}
-	FileSystem::WriteMemoryToFile("DXTCompressed.dds", pDXTCompressed, compressedSize);
+	if (verbose) cout << endl;
+	QueryPerformanceCounter(&endTime);
+	QueryPerformanceFrequency(&freq);
+
+	// write results
+	FileSystem::WriteMemoryToFile(outputFilename, pDXTCompressed, compressedSize);
+
+	// dxt decompressen (squish gebruikt rgba volgorde)
+	unsigned char* pDecompressedDXT = new unsigned char[width * height * 4];
+	squish::DecompressImage(pDecompressedDXT, width, height, pDXTCompressed + 128, squish::kDxt1);
 	
-	std::cout << "Exiting..." << std::endl;
+	unsigned char* pDecompressedRGBA = pDecompressedBGRA; // Nieuwe pointer om naamverwarring te voorkomen
+	PSNRTools::ConvertFromBGRAtoRGBA(pDecompressedRGBA, width, height); // Kleurvolgorde aanpassen, pDecompressedBGRA is niet meer geldig als naam
+
+	// PSNR bepalen en resultaat uitvoeren
+	PSNRTools::PSNR_INFO psnrResult;
+	PSNRTools::CalculatePSNRFromRGBA(psnrResult, pDecompressedDXT, pDecompressedRGBA, width, height);
+	float averageTime = (float)(endTime.LowPart - startTime.LowPart) * 1000 / (freq.LowPart * loops);
 	
+	cout << averageTime << ", " << psnrResult.y.psnr << ", " << "Desmadryl" << ", Cockaerts" << endl;
+
+	if (verbose) cout << "Exiting..." << endl;
+	
+	// clean up
 	delete pOriginal;
 	delete pCompressed;
 	delete pDecompressedBGRA;
 	delete pDXTCompressed;
+	delete pDecompressedDXT;
 
 	return 0;
 }
-
