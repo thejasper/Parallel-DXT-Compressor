@@ -100,11 +100,11 @@ unsigned int SimpleDXTEnc::calculateIndices(const unsigned char* block, const un
 
 	// save maximum, minimum and 2 interpolated colors for easy access
 	colors[0][0] = (maxColor[0] & MSB5_MASK) | (maxColor[0] >> 5);
-	colors[0][1] = (maxColor[1] & MSB6_MASK) | (maxColor[0] >> 6);
-	colors[0][2] = (maxColor[2] & MSB5_MASK) | (maxColor[0] >> 5);
+	colors[0][1] = (maxColor[1] & MSB6_MASK) | (maxColor[1] >> 6);
+	colors[0][2] = (maxColor[2] & MSB5_MASK) | (maxColor[2] >> 5);
 	colors[1][0] = (minColor[0] & MSB5_MASK) | (minColor[0] >> 5);
-	colors[1][1] = (minColor[1] & MSB6_MASK) | (minColor[0] >> 6);
-	colors[1][2] = (minColor[2] & MSB5_MASK) | (minColor[0] >> 5);
+	colors[1][1] = (minColor[1] & MSB6_MASK) | (minColor[1] >> 6);
+	colors[1][2] = (minColor[2] & MSB5_MASK) | (minColor[2] >> 5);
 	colors[2][0] = (2 * maxColor[0] + 1 * minColor[0]) / 3;
 	colors[2][1] = (2 * maxColor[1] + 1 * minColor[1]) / 3;
 	colors[2][2] = (2 * maxColor[2] + 1 * minColor[2]) / 3;
